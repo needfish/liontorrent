@@ -283,6 +283,10 @@ func mustJSON(v []boxRow) []byte {
 
 func authed2(next http.Handler) http.Handler {
 	x := func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/login" || r.URL.Path == "/logout" {
+			next.ServeHTTP(w, r)
+			return
+		}
 		if !authed(r) {
 			w.Header().Set("WWW-Authenticate", `Basic realm="tnt"`)
 			http.Error(w, "unauthorized", 401)

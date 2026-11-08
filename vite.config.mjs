@@ -1,4 +1,5 @@
 import { defineConfig, loadEnv } from "vite";
+import basicSsl from "@vitejs/plugin-basic-ssl";
 import solid from "vite-plugin-solid";
 import path from "node:path";
 
@@ -12,7 +13,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     base: "./",
-    plugins: [solid()],
+    plugins: [solid(), basicSsl()], // https dev: TinyFM absolute redirects must match the dev scheme
     resolve: { alias: { "@sealion/ui": path.resolve("../page-mountain-lion/sealion") } },
     server: {
       fs: { allow: [".."] },
@@ -26,6 +27,7 @@ export default defineConfig(({ mode }) => {
         "/user-kitan": {
           target: box,
           changeOrigin: true,
+          autoRewrite: true, // TinyFM 302s to absolute https URLs; keep them on localhost
           headers: auth,
         },
       },

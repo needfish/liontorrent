@@ -1,3 +1,6 @@
+/* full-bleed list: header bar and rows meet the window edges like the toolbar */
+.content > .list { padding: 0; }
+
 /* Detail panel (ruTorrent-style lower pane) */
 /* fixed pane height so tab switches don't jump; content scrolls under the tabs.
  * Pane is full-bleed so the gradient tab strip touches the pane edges. */

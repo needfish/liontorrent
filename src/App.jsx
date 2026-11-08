@@ -6,19 +6,35 @@ import {
 } from "@sealion/ui";
 import { rpc } from "./rpc";
 
-/* d.* fields polled for the list. Order matches the row mapping below. */
+/* d.* fields polled for the list. Order matches the row mapping below.
+ * The cat="$t.multicall=..." forms inline per-torrent tracker/scrape data
+ * so the list poll needs no extra requests (same trick as Flood). */
 const FIELD_NAMES = [
   "hash", "name", "state", "complete", "size", "done", "down", "up",
   "downTotal", "upTotal", "ratio", "label", "priority",
-  "created", "message", "path", "peers",
+  "created", "message", "path", "seedsConn", "peers", "tags", "trackers", "seeds", "leech",
 ];
-const FIELDS = FIELD_NAMES.map((n) => ({
-  hash: "d.hash=", name: "d.name=", state: "d.state=", complete: "d.complete=",
-  size: "d.size_bytes=", done: "d.completed_bytes=", down: "d.down.rate=", up: "d.up.rate=",
-  downTotal: "d.down.total=", upTotal: "d.up.total=", ratio: "d.ratio=",
-  label: "d.custom1=", priority: "d.priority=", created: "d.creation_date=",
-  message: "d.message=", path: "d.base_path=", peers: "d.peers_accounted=",
-}[n]));
+const FIELDS = [
+  "d.hash=", "d.name=", "d.state=", "d.complete=",
+  "d.size_bytes=", "d.completed_bytes=", "d.down.rate=", "d.up.rate=",
+  "d.down.total=", "d.up.total=", "d.ratio=",
+  "d.custom1=", "d.priority=", "d.creation_date=",
+  "d.message=", "d.base_path=", "d.peers_complete=", "d.peers_accounted=",
+  "d.custom1=", 'cat="$t.multicall=d.hash=,t.is_enabled=,t.url=,cat={|||}"',
+  'cat="$t.multicall=d.hash=,t.scrape_complete=,cat={|||}"',
+  'cat="$t.multicall=d.hash=,t.scrape_incomplete=,cat={|||}"',
+];
+
+const domain = (u) => { try { return new URL(u).hostname; } catch { return u; } };
+const decodeRow = (r) => {
+  const t = Object.fromEntries(FIELD_NAMES.map((n, i) => [n, r[i]]));
+  t.tags = (t.tags || "").split(",").filter(Boolean).map(decodeURIComponent);
+  t.trackers = (t.trackers || "").split("|||").filter((s) => s && !s.startsWith("0:"))
+    .map((s) => domain(s.slice(2)));
+  t.seeds = +String(t.seeds).split("|||")[0] || 0;
+  t.leech = +String(t.leech).split("|||")[0] || 0;
+  return t;
+};
 
 const state = (t) =>
   t.message ? "error" :
@@ -68,8 +84,9 @@ const columns = [
   { key: "up", width: "80px", header: "UL", className: "size", render: (t) => speed(t.up) },
   { key: "eta", width: "60px", header: "ETA", className: "size", render: (t) =>
     eta({ ...t, eta: Math.floor((t.size - t.done) / Math.max(t.down, 1)) }) },
-  { key: "label", width: "80px", header: "Label" },
-  { key: "peers", width: "60px", header: "Peers", className: "size" },
+  { key: "label", width: "80px", header: "Tags", render: (t) => t.tags.join(", ") },
+  { key: "seeds", width: "62px", header: "Seeds", className: "size", render: (t) => `${t.seedsConn} (${t.seeds})` },
+  { key: "leech", width: "62px", header: "Leech", className: "size", render: (t) => `${t.peers} (${t.leech})` },
   { key: "priority", width: "60px", header: "Priority", className: "size", render: (t) => prio[t.priority] ?? t.priority },
   { key: "created", width: "75px", header: "Created", className: "date", render: (t) =>
     new Date(t.created * 1000).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) },
@@ -129,6 +146,7 @@ const TorrentUi = () => {
   const [torrents, setTorrents] = createSignal([]);
   const [filterKey, setFilterKey] = createSignal("all");
   const [label, setLabel] = createSignal(null);
+  const [tracker, setTracker] = createSignal(null);
   const [query, setQuery] = createSignal("");
   const [sort, setSort] = createSignal("name");
   const [selectedIds, setSelectedIds] = createSignal([]);
@@ -138,13 +156,21 @@ const TorrentUi = () => {
   const [magnet, setMagnet] = createSignal("");
   const [startNow, setStartNow] = createSignal(true);
   const [confirmOpen, setConfirmOpen] = createSignal(false);
-  const [error, setError] = createSignal("");
+const [error, setError] = createSignal("");
+  const [page, setPage] = createSignal("torrents");
+
+  const menus = [
+    { label: "Torrents", onTopClick: () => setPage("torrents") },
+    { label: "Files", onTopClick: () => setPage("files") },
+    { label: "ruTorrent ↗", onTopClick: () =>
+      window.open("https://le6-3-34virmire.pulsedmedia.com/user-kitan/") },
+  ];
 
   let timer;
   const poll = async () => {
     try {
       const rows = await rpc("d.multicall2", "", "main", ...FIELDS);
-      setTorrents(rows.map((r) => Object.fromEntries(FIELD_NAMES.map((n, i) => [n, r[i]]))));
+      setTorrents(rows.map(decodeRow));
       setError("");
     } catch (e) {
       setError(String(e.message || e).slice(0, 80));
@@ -153,11 +179,14 @@ const TorrentUi = () => {
   onMount(() => { poll(); timer = setInterval(poll, 2000); });
   onCleanup(() => clearInterval(timer));
 
-  const labels = createMemo(() => [...new Set(torrents().map((t) => t.label).filter(Boolean))]);
+  const labels = createMemo(() => [...new Set(torrents().flatMap((t) => t.tags))]);
+  const trackerNames = createMemo(() => [...new Set(torrents().flatMap((t) => t.trackers))]);
   const counts = (key) => torrents().filter(filters.find((f) => f.key === key).match).length;
   const shown = createMemo(() => torrents()
     .filter(filters.find((f) => f.key === filterKey()).match)
-    .filter((t) => (label() == null || t.label === label()))
+    .filter((t) => (label() == null || t.tags.includes(label()) ||
+      (label() === "" && !t.tags.length)))
+    .filter((t) => (tracker() == null || t.trackers.includes(tracker())))
     .filter((t) => t.name.toLowerCase().includes(query().toLowerCase()))
     .sort(sorters[sort()]));
   const order = () => shown().map((t) => t.hash);
@@ -241,8 +270,10 @@ const TorrentUi = () => {
   });
 
   return (
-    <Window>
-      <Sidebar>
+    <Window menus={menus}>
+      <Show when={page() === "torrents"} fallback={
+        <iframe title="File manager" src="https://le6-3-34virmire.pulsedmedia.com/user-kitan/rutorrent/plugins/filemanager/"
+          style={{ flex: 1, border: "none" }} />}>{/* torrents */}      <Sidebar>
         <SectionLabel>State</SectionLabel>
         <For each={filters}>{(f) => (
           <SidebarItem selected={f.key === filterKey()} count={counts(f.key)}
@@ -250,12 +281,18 @@ const TorrentUi = () => {
             {f.name}
           </SidebarItem>
         )}</For>
-        <SectionLabel>Labels</SectionLabel>
+        <SectionLabel>Tags</SectionLabel>
         <SidebarItem selected={label() == null} count={torrents().length} onClick={() => setLabel(null)}>
           All
         </SidebarItem>
         <For each={labels()}>{(l) => (
-          <SidebarItem selected={l === label()} onClick={() => setLabel(l)}>{l}</SidebarItem>
+          <SidebarItem selected={l === label()} count={torrents().filter((t) => t.tags.includes(l)).length}
+            onClick={() => { setTracker(null); setLabel(l); }}>{l}</SidebarItem>
+        )}</For>
+        <SectionLabel>Trackers</SectionLabel>
+        <For each={trackerNames()}>{(s) => (
+          <SidebarItem selected={s === tracker()} count={torrents().filter((t) => t.trackers.includes(s)).length}
+            onClick={() => { setLabel(null); setTracker(s); }}>{s}</SidebarItem>
         )}</For>
       </Sidebar>
 
@@ -303,6 +340,7 @@ const TorrentUi = () => {
 
         <StatusBar>{totals()}</StatusBar>
       </main>
+      </Show>
 
       <Dialog open={addOpen()} onClose={() => setAddOpen(false)} title="Add Torrent">
         <Tabs items={[{ key: "url", label: "Magnet / URL" }, { key: "file", label: ".torrent file" }]}

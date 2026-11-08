@@ -332,7 +332,7 @@ const TorrentUi = () => {
         </Toolbar>
 
         <div class="list torrent">
-          <Table columns={columns} data={shown()} rowKey="hash" selectedKeys={selectedIds()}
+          <Table columns={columns} data={shown()} rowKey="hash" resizable selectedKeys={selectedIds()}
             onSelect={(t, e) => select(t.hash, e)}
             onContextMenu={(t, e) => { e.preventDefault(); select(t.hash, e); setAt({ x: e.clientX, y: e.clientY }); }}
             empty={<div class="empty"><div>{shown().length ? "No torrents" : "Add a torrent to begin"}</div></div>} />

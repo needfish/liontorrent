@@ -23,7 +23,7 @@ export default defineConfig({
       "/fm": {
         target: box,
         changeOrigin: true,
-        rewrite: (p) => "/user-kitan/rutorrent/plugins/filemanager" + p.replace(/^\/fm/, ""),
+        rewrite: (p) => "/user-kitan" + p.replace(/^\/fm/, ""), // dashboard filemanager.php lives at /user-kitan/
         headers: user && pass
           ? { Authorization: `Basic ${Buffer.from(`${user}:${pass}`).toString("base64")}` }
           : {},

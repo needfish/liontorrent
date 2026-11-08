@@ -16,6 +16,13 @@
 /* list fills leftover space; status bar pinned regardless of detail height */
 .content > .list { flex: 1 1 0; min-height: 0; overflow-y: auto; }
 .content > .statusbar { margin-top: auto; }
+
+/* Settings: seedbox list, dot marks the active box, save row */
+.settings .sb-form { display: flex; gap: 8px; align-items: center; padding: 10px 12px; border-top: 1px solid #e2e6eb; }
+.sb-form .field:first-child { flex: 0 0 200px; }
+.sb-form .field:nth-child(2) { flex: 1; }
+.dot { width: 9px; height: 9px; border-radius: 50%; border: 1px solid #aeb6bf; margin: 0 auto; }
+.dot.on { background: #6cb94d; border-color: #4d9a33; }
 .detail .prop { color: #6c7683; }
 .detail .mono { font-family: var(--mono, monospace); font-size: 13.5px; user-select: all; }
 .st-line { padding: 1px 0; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

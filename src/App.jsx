@@ -4,7 +4,7 @@ import {
   StatusBar, Table, Confirm, Toasts, Dialog, Upload, Toggle, Tabs, Menu, Text, Mid,
   toast,
 } from "@sealion/ui";
-import { rpc } from "./rpc";
+import { rpc, setEndpoint } from "./rpc";
 
 const copy = (v) =>
   navigator.clipboard.writeText(v).then(() => toast(v.length > 24 ? `${v.slice(0, 24)}… copied` : `${v} copied`, "good"));
@@ -29,6 +29,10 @@ const FIELDS = [
 ];
 
 const domain = (u) => { try { return new URL(u).hostname; } catch { return u; } };
+
+/* --- multiple seedboxes: saved locally; the active entry's URL feeds rpc --- */
+const loadBoxes = () => JSON.parse(localStorage.getItem("seedboxes") || "[]");
+const activeUrl = () => localStorage.getItem("activeUrl") || "";
 const decodeRow = (r) => {
   const t = Object.fromEntries(FIELD_NAMES.map((n, i) => [n, r[i]]));
   t.tags = (t.tags || "").split(",").filter(Boolean).map(decodeURIComponent);
@@ -157,7 +161,8 @@ const Detail = (props) => {
   );
 };
 
-const TorrentUi = () => {
+const TorrentUi = (props) => /* props.onSettings swaps to the settings page */
+{
   const [torrents, setTorrents] = createSignal([]);
   const [filterKey, setFilterKey] = createSignal("all");
   const [label, setLabel] = createSignal(null);
@@ -175,6 +180,7 @@ const TorrentUi = () => {
 
   const menus = [
     { label: "Torrents", onTopClick: () => {} },
+    { label: "Settings", onTopClick: props.onSettings },
     { label: "ruTorrent ↗", onTopClick: () =>
       window.open("https://le6-3-34virmire.pulsedmedia.com/user-kitan/") },
   ];
@@ -189,7 +195,10 @@ const TorrentUi = () => {
       setError(String(e.message || e).slice(0, 80));
     }
   };
-  onMount(() => { poll(); timer = setInterval(poll, 2000); });
+  onMount(() => {
+    setEndpoint(activeUrl());
+    poll(); timer = setInterval(poll, 2000);
+  });
   onCleanup(() => clearInterval(timer));
 
   const labels = createMemo(() => [...new Set(torrents().flatMap((t) => t.tags))]);
@@ -375,8 +384,69 @@ const TorrentUi = () => {
   );
 };
 
+/* Settings page: manage seedboxes (name + RPC URL); the active one feeds rpc */
+const SettingsUi = ({ onClose }) => {
+  const [boxes, setBoxes] = createSignal(loadBoxes());
+  const [active, setActive] = createSignal(activeUrl());
+  const [pick, setPick] = createSignal(null); /* index into boxes; null = closed */
+  const [name, setName] = createSignal("");
+  const [url, setUrl] = createSignal("");
+  const blank = () => { setPick(null); setName(""); setUrl(""); };
+
+  const boxCols = [
+    { key: "url", width: "28px", header: "", render: (b) => <div class="dot" classList={{ on: b.url === active() }} /> },
+    { key: "name", width: "180px", min: 90, max: null, header: "Name", render: (b) => <Mid text={b.name || domain(b.url)} /> },
+    { key: "url", width: "430px", min: 240, max: null, header: "RPC URL", render: (b) => <Mid text={b.url} /> },
+  ];
+  const open = (i) => { setPick(i); setName(boxes()[i].name); setUrl(boxes()[i].url); };
+  const store = (b) => { setBoxes(b); localStorage.setItem("seedboxes", JSON.stringify(b)); };
+  const save = () => {
+    if (!name().trim() || !url().trim()) return;
+    const b = [...boxes()];
+    const box = { name: name().trim(), url: url().trim() };
+    if (pick() == null || pick() < 0) b.push(box); else b[pick()] = box;
+    if (!active()) { setActive(box.url); localStorage.setItem("activeUrl", box.url); } /* first entry becomes active */
+    store(b); blank(); toast("Seedbox saved", "good");
+  };
+  const del = () => { store(boxes().filter((_, i) => i !== pick())); blank(); };
+  return (
+    <Window menus={[{ label: "Torrents", onTopClick: onClose }, { label: "Settings", onTopClick: () => {} }]}>
+      <main class="content settings">
+        <Toolbar>
+          <Btn onClick={() => { blank(); setPick(-1); }}>Add</Btn>
+          <Show when={pick() != null && pick() >= 0}><Btn danger onClick={del}>Delete</Btn></Show>
+        </Toolbar>
+        <div class="list">
+          <Table columns={boxCols} data={boxes()} rowKey="url" resizable
+            onSelect={(b) => open(boxes().indexOf(b))}
+            empty={<div class="empty"><div>No seedboxes yet</div></div>} />
+        </div>
+        <Show when={pick() != null}>
+          <div class="sb-form">
+            <Field placeholder="Name" value={name()} onInput={setName} />
+            <Field placeholder="RPC URL (e.g. https://host/user/RPC2)" value={url()} onInput={setUrl} />
+            <Toggle checked={url() !== "" && url() === active()} label="Use this seedbox"
+              onChange={(v) => { if (!url()) return; setActive(url()); localStorage.setItem("activeUrl", url()); toast(v ? `${domain(url())} is now active` : "", "good"); }} />
+            <Btn onClick={save}>Save</Btn>
+          </div>
+        </Show>
+        <StatusBar>{`${boxes().length} seedbox(es) · active: ${active() || "default"}`}</StatusBar>
+      </main>
+      <Toasts />
+    </Window>
+  );
+};
+
+/* Root: Torrents ⇄ Settings pages */
+const App = () => {
+  const [settings, setSettings] = createSignal(false);
+  return <Show when={settings()} fallback={<TorrentUi onSettings={() => setSettings(true)} />}>
+    <SettingsUi onClose={() => setSettings(false)} />
+  </Show>;
+};
+
 export default (props) => (
   <ErrorBoundary fallback={(e) => <div class="alert bad">{String(e.message)}</div>}>
-    <TorrentUi {...props} />
+    <App {...props} />
   </ErrorBoundary>
 );

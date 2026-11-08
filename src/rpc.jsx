@@ -2,7 +2,8 @@
  * Local dev posts to /rpc (proxied in vite.config.mjs).
  * Deployed on the seedbox it is same-origin, so the browser's saved
  * basic-auth credentials attach automatically. */
-const url = import.meta.env.DEV ? "/rpc" : "/user-kitan/rutorrent/plugins/rpc/rpc.php";
+let url = import.meta.env.DEV ? "/rpc" : "/user-kitan/rutorrent/plugins/rpc/rpc.php";
+export const setEndpoint = (u) => { if (u) url = u; };
 
 const esc = (s) => String(s).replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]));
 

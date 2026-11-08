@@ -80,19 +80,19 @@ const sorters = {
 const columns = [
   { key: "name", width: "200px", min: 168, max: null, header: "Name", render: (t) => <Mid text={t.name} /> },
   { key: "state", width: "94px", min: 94, fixed: true, header: "Status", render: (t) => <Badge tone={tone[state(t)]}>{state(t)}</Badge> },
-  { key: "size", width: "82px", min: 82, header: "Size", className: "size right", render: (t) => fmt(t.size) },
+  { key: "size", width: "82px", min: 82, max: 164, header: "Size", className: "size right", render: (t) => fmt(t.size) },
   { key: "done", width: "72px", min: 72, fixed: true, header: "Done", render: (t) =>
     <Bar percent={t.size ? (t.done / t.size) * 100 : 0} hue={t.complete ? "green" : "blue"} /> },
-  { key: "downTotal", width: "96px", min: 96, header: "Downloaded", className: "size right", render: (t) => fmt(t.downTotal) },
-  { key: "upTotal", width: "82px", min: 82, header: "Uploaded", className: "size right", render: (t) => fmt(t.upTotal) },
-  { key: "ratio", width: "62px", min: 62, header: "Ratio", className: "size right", render: (t) => (t.ratio / 1000).toFixed(3) },
-  { key: "down", width: "76px", min: 76, header: "DL", className: "size right", render: (t) => speed(t.down) },
-  { key: "up", width: "76px", min: 76, header: "UL", className: "size right", render: (t) => speed(t.up) },
-  { key: "eta", width: "64px", min: 64, header: "ETA", className: "size", render: (t) =>
+  { key: "downTotal", width: "96px", min: 96, max: 192, header: "Downloaded", className: "size right", render: (t) => fmt(t.downTotal) },
+  { key: "upTotal", width: "82px", min: 82, max: 164, header: "Uploaded", className: "size right", render: (t) => fmt(t.upTotal) },
+  { key: "ratio", width: "62px", min: 62, max: 124, header: "Ratio", className: "size right", render: (t) => (t.ratio / 1000).toFixed(3) },
+  { key: "down", width: "76px", min: 76, max: 152, header: "DL", className: "size right", render: (t) => speed(t.down) },
+  { key: "up", width: "76px", min: 76, max: 152, header: "UL", className: "size right", render: (t) => speed(t.up) },
+  { key: "eta", width: "64px", min: 64, max: 128, header: "ETA", className: "size", render: (t) =>
     eta({ ...t, eta: Math.floor((t.size - t.done) / Math.max(t.down, 1)) }) },
   { key: "label", width: "72px", min: 44, header: "Tags", render: (t) => t.tags.join(", ") },
-  { key: "seeds", width: "62px", min: 62, header: "Seeds", className: "size", render: (t) => `${t.seedsConn} (${t.seeds})` },
-  { key: "leech", width: "62px", min: 62, header: "Leech", className: "size", render: (t) => `${t.peers} (${t.leech})` },
+  { key: "seeds", width: "62px", min: 62, max: 124, header: "Seeds", className: "size", render: (t) => `${t.seedsConn} (${t.seeds})` },
+  { key: "leech", width: "62px", min: 62, max: 124, header: "Leech", className: "size", render: (t) => `${t.peers} (${t.leech})` },
   { key: "priority", width: "58px", min: 58, max: 116, header: "Priority", className: "size", render: (t) => prio[t.priority] ?? t.priority },
   { key: "created", width: "70px", min: 70, header: "Created", className: "date", render: (t) =>
     new Date(t.created * 1000).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "2-digit" }) },

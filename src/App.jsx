@@ -6,6 +6,9 @@ import {
 } from "@sealion/ui";
 import { rpc } from "./rpc";
 
+const copy = (v) =>
+  navigator.clipboard.writeText(v).then(() => toast(v.length > 24 ? `${v.slice(0, 24)}… copied` : `${v} copied`, "good"));
+
 /* d.* fields polled for the list. Order matches the row mapping below.
  * The cat="$t.multicall=..." forms inline per-torrent tracker/scrape data
  * so the list poll needs no extra requests (same trick as Flood). */

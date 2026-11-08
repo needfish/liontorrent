@@ -3,6 +3,7 @@ package main
 /* tnt server: static dist + single-password gate + seedbox profiles (sqlite) + rpc forwarding */
 
 import (
+	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/subtle"
@@ -15,6 +16,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -25,10 +27,7 @@ import (
 var passHash = os.Getenv("LIONTORRENT_PASS_HASH")
 var staticRoot = os.Getenv("STATIC_ROOT")
 
-func authed(r *http.Request) bool {
-	if passHash == "" {
-		return true
-	}
+func basicAuthed(r *http.Request) bool {
 	scheme, b64, cut := strings.Cut(r.Header.Get("Authorization"), " ")
 	if scheme != "Basic" || !cut {
 		return false
@@ -44,6 +43,78 @@ func authed(r *http.Request) bool {
 		return false
 	}
 	return len(want) == len(sum) && subtle.ConstantTimeCompare(want, sum[:]) == 1
+}
+
+/* signed cookie session: tnt=<unix-exp>.<hmac(exp) keyed by the password hash> */
+const cookieDays = 90
+
+func signCookie(exp time.Time) string {
+	msg := []byte(strconv.FormatInt(exp.Unix(), 10))
+	mac := hmac.New(sha256.New, []byte(passHash))
+	mac.Write(msg)
+	return string(msg) + "." + hex.EncodeToString(mac.Sum(nil))
+}
+
+func checkCookie(v string) bool {
+	msg, sig, cut := strings.Cut(v, ".")
+	if !cut {
+		return false
+	}
+	exp, err := strconv.ParseInt(msg, 10, 64)
+	if err != nil || exp < time.Now().Unix() {
+		return false
+	}
+	mac := hmac.New(sha256.New, []byte(passHash))
+	mac.Write([]byte(msg))
+	got, err := hex.DecodeString(sig)
+	return err == nil && subtle.ConstantTimeCompare(got, mac.Sum(nil)) == 1
+}
+
+func authed(r *http.Request) bool {
+	if passHash == "" {
+		return true
+	}
+	if basicAuthed(r) {
+		return true
+	}
+	if c, err := r.Cookie("tnt"); err == nil {
+		return checkCookie(c.Value)
+	}
+	return false
+}
+
+const loginPage = `<!doctype html><title>tnt</title>
+<form method="POST" style="max-width:240px;margin:20vh auto;font:16px system-ui">
+<input type="password" name="pass" placeholder="password" autofocus style="width:100%;padding:8px">
+<button style="width:100%;padding:8px;margin-top:8px">Sign in</button>
+</form>`
+
+func login(w http.ResponseWriter, r *http.Request) {
+	if passHash == "" {
+		http.Redirect(w, r, "/", 302)
+		return
+	}
+	if r.Method == http.MethodPost {
+		r.ParseForm()
+		sum := sha256.Sum256([]byte(r.PostFormValue("pass")))
+		want, _ := hex.DecodeString(passHash)
+		if subtle.ConstantTimeCompare(want, sum[:]) == 1 {
+			exp := time.Now().Add(cookieDays * 24 * time.Hour)
+			http.SetCookie(w, &http.Cookie{Name: "tnt", Value: signCookie(exp), Path: "/", MaxAge: cookieDays * 86400, HttpOnly: true})
+			http.Redirect(w, r, "/", 302)
+			return
+		}
+		time.Sleep(time.Second) /* light rate limit */
+		http.Error(w, "wrong password", 401)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = w.Write([]byte(loginPage))
+}
+
+func logout(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{Name: "tnt", Value: "", Path: "/", MaxAge: -1})
+	http.Redirect(w, r, "/", 302)
 }
 
 type boxRow struct {
@@ -245,6 +316,8 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", root)
 	mux.HandleFunc("/api/", root)
+	mux.HandleFunc("/login", login)
+	mux.HandleFunc("/logout", logout)
 	log.Println("tnt on :", port)
 	host := os.Getenv("LISTEN_HOST")
 	if host == "" {

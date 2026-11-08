@@ -246,5 +246,9 @@ func main() {
 	mux.HandleFunc("/", root)
 	mux.HandleFunc("/api/", root)
 	log.Println("tnt on :", port)
-	log.Fatal(http.ListenAndServe("127.0.0.1:"+port, authed2(mux)))
+	host := os.Getenv("LISTEN_HOST")
+	if host == "" {
+		host = "0.0.0.0" /* container loopback is enforced by the docker -p 127.0.0.1 mapping */
+	}
+	log.Fatal(http.ListenAndServe(host+":"+port, authed2(mux)))
 }

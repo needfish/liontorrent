@@ -3,6 +3,7 @@
 
 /* Finder-style header: flat like the rows, set apart by small gray text */
 .header { font-size: 13px; padding: 8px 14px; }
+.header > span + span { border-left: 1px solid #ddd; padding-left: 7px; margin-left: -7px; }
 
 /* Detail panel (ruTorrent-style lower pane) */
 /* fixed pane height so tab switches don't jump; content scrolls under the tabs.

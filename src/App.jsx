@@ -106,11 +106,13 @@ const Detail = (props) => {
     if (!h || tab() === "overview") return;
     (tab() === "files"
       ? rpc("f.multicall", h, "", "f.path=", "f.size_bytes=", "f.completed_chunks=", "f.size_chunks=")
-        .then((r) => setFiles(r.map(([path, size, done, total]) => ({ path, size, pct: total ? (done / total) * 100 : 0 }))))
+        .then((r) => setFiles(asRows(r, h).map(([path, size, done, total]) => ({ path, size, pct: total ? (done / total) * 100 : 0 }))))
       : rpc("t.multicall", h, "", "t.url=", "t.is_enabled=", "t.group=")
-        .then((r) => setTrackers(r.map(([url, on, group]) => ({ url, on, group })))))
+        .then((r) => setTrackers(asRows(r, h).map(([url, on, group]) => ({ url, on, group })))))
       .catch((e) => toast(String(e.message || e), "bad"));
   });
+  /* legacy X.multicall returns <struct>{hash: rows}</struct>; multicall2 returns array */
+  const asRows = (r, h) => Array.isArray(r) ? r : r?.[h] ?? Object.values(r)[0] ?? [];
   const t = props.t;
   const stateLine = (text) => <div class="st-line"><Text muted>{text}</Text></div>;
   return (
@@ -129,14 +131,19 @@ const Detail = (props) => {
             { key: "state", width: "80px", header: "Enabled", render: (r) => (r.on ? "enabled" : "disabled") },
             { key: "group", width: "60px", header: "Group", className: "size" },
           ]} />} >
-        <div class="st-block">
-          {stateLine(`Save as: ${t.path}`)}
-          {stateLine(`Hash: ${t.hash}`)}
-          {stateLine(`Downloaded ${fmt(t.downTotal)} · Uploaded ${fmt(t.upTotal)} · Ratio ${(t.ratio / 1000).toFixed(3)}`)}
-          {stateLine(`Speed ↓ ${speed(t.down)} ↑ ${speed(t.up)} · Peers connected: ${t.peers} · ETA ${eta({ ...t, eta: Math.floor((t.size - t.done) / Math.max(t.down, 1)) })}`)}
-          {stateLine(`Priority: ${prio[t.priority]} · Created: ${new Date(t.created * 1000).toLocaleString()}`)}
-          <Show when={t.message}>{stateLine(`Message: ${t.message}`)}</Show>
-        </div>
+        <table class="kv">
+          <tbody>
+            <Show when={t.message}><tr><td>Message</td><td class="v mono" style="color:var(--bad)">{t.message}</td></tr></Show>
+            <tr><td>Hash</td><td class="v mono sel" onclick={() => copy(t.hash)} title="click to copy">{t.hash}</td></tr>
+            <tr><td>Save path</td><td class="v mono sel" onclick={() => copy(t.path)} title="click to copy">{t.path}</td></tr>
+            <tr><td>Down / Up</td><td class="v mono">{fmt(t.downTotal)} / {fmt(t.upTotal)}</td></tr>
+            <tr><td>Ratio</td><td class="v mono">{(t.ratio / 1000).toFixed(3)}</td></tr>
+            <tr><td>Speed</td><td class="v mono">↓ {speed(t.down)} · ↑ {speed(t.up)}</td></tr>
+            <tr><td>Peers</td><td class="v mono">{t.peers} connected</td></tr>
+            <tr><td>Priority</td><td class="v">{prio[t.priority]}</td></tr>
+            <tr><td>Created</td><td class="v mono">{new Date(t.created * 1000).toLocaleString()}</td></tr>
+          </tbody>
+        </table>
       </Show>
     </div>
   );
@@ -156,12 +163,10 @@ const TorrentUi = () => {
   const [magnet, setMagnet] = createSignal("");
   const [startNow, setStartNow] = createSignal(true);
   const [confirmOpen, setConfirmOpen] = createSignal(false);
-const [error, setError] = createSignal("");
-  const [page, setPage] = createSignal("torrents");
+  const [error, setError] = createSignal("");
 
   const menus = [
-    { label: "Torrents", onTopClick: () => setPage("torrents") },
-    { label: "Files", onTopClick: () => setPage("files") },
+    { label: "Torrents", onTopClick: () => {} },
     { label: "ruTorrent ↗", onTopClick: () =>
       window.open("https://le6-3-34virmire.pulsedmedia.com/user-kitan/") },
   ];
@@ -271,10 +276,7 @@ const [error, setError] = createSignal("");
 
   return (
     <Window menus={menus}>
-      <Show when={page() === "torrents"} fallback={
-        <iframe title="File manager"
-          src={(import.meta.env.DEV ? "/user-kitan" : "") + "/filemanager.php"}
-          style={{ flex: 1, border: "none" }} />}>{/* torrents */}      <Sidebar>
+      <Sidebar>
         <SectionLabel>State</SectionLabel>
         <For each={filters}>{(f) => (
           <SidebarItem selected={f.key === filterKey()} count={counts(f.key)}
@@ -341,7 +343,6 @@ const [error, setError] = createSignal("");
 
         <StatusBar>{totals()}</StatusBar>
       </main>
-      </Show>
 
       <Dialog open={addOpen()} onClose={() => setAddOpen(false)} title="Add Torrent">
         <Tabs items={[{ key: "url", label: "Magnet / URL" }, { key: "file", label: ".torrent file" }]}

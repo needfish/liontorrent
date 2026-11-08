@@ -1,9 +1,16 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import solid from "vite-plugin-solid";
 import path from "node:path";
 
-const box = "https://le6-3-34virmire.pulsedmedia.com";
-const { LIONTORRENT_USER: user, LIONTORRENT_PASS: pass } = process.env;
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), "");
+  const box = "https://le6-3-34virmire.pulsedmedia.com";
+  const user = env.LIONTORRENT_USER, pass = env.LIONTORRENT_PASS;
+  const auth = user && pass
+    ? { Authorization: `Basic ${Buffer.from(`${user}:${pass}`).toString("base64")}` }
+    : {};
+
+  return {
 
 export default defineConfig({
   base: "./",
@@ -16,17 +23,13 @@ export default defineConfig({
         target: box,
         changeOrigin: true,
         rewrite: () => "/user-kitan/rutorrent/plugins/rpc/rpc.php",
-        headers: user && pass
-          ? { Authorization: `Basic ${Buffer.from(`${user}:${pass}`).toString("base64")}` }
-          : {},
+        headers: auth,
       },
       "/fm": {
         target: box,
         changeOrigin: true,
         rewrite: (p) => "/user-kitan" + p.replace(/^\/fm/, ""), // dashboard filemanager.php lives at /user-kitan/
-        headers: user && pass
-          ? { Authorization: `Basic ${Buffer.from(`${user}:${pass}`).toString("base64")}` }
-          : {},
+        headers: auth,
       },
     },
   },

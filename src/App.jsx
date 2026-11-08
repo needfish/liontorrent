@@ -114,7 +114,6 @@ const Detail = (props) => {
   /* legacy X.multicall returns <struct>{hash: rows}</struct>; multicall2 returns array */
   const asRows = (r, h) => Array.isArray(r) ? r : r?.[h] ?? Object.values(r)[0] ?? [];
   const t = props.t;
-  const stateLine = (text) => <div class="st-line"><Text muted>{text}</Text></div>;
   return (
     <div class="detail">
       <Tabs items={[
@@ -131,19 +130,22 @@ const Detail = (props) => {
             { key: "state", width: "80px", header: "Enabled", render: (r) => (r.on ? "enabled" : "disabled") },
             { key: "group", width: "60px", header: "Group", className: "size" },
           ]} />} >
-        <table class="kv">
-          <tbody>
-            <Show when={t.message}><tr><td>Message</td><td class="v mono" style="color:var(--bad)">{t.message}</td></tr></Show>
-            <tr><td>Hash</td><td class="v mono sel" onclick={() => copy(t.hash)} title="click to copy">{t.hash}</td></tr>
-            <tr><td>Save path</td><td class="v mono sel" onclick={() => copy(t.path)} title="click to copy">{t.path}</td></tr>
-            <tr><td>Down / Up</td><td class="v mono">{fmt(t.downTotal)} / {fmt(t.upTotal)}</td></tr>
-            <tr><td>Ratio</td><td class="v mono">{(t.ratio / 1000).toFixed(3)}</td></tr>
-            <tr><td>Speed</td><td class="v mono">↓ {speed(t.down)} · ↑ {speed(t.up)}</td></tr>
-            <tr><td>Peers</td><td class="v mono">{t.peers} connected</td></tr>
-            <tr><td>Priority</td><td class="v">{prio[t.priority]}</td></tr>
-            <tr><td>Created</td><td class="v mono">{new Date(t.created * 1000).toLocaleString()}</td></tr>
-          </tbody>
-        </table>
+        <Table rowKey="k" onSelect={(row) => row.copy && copy(row.v)}
+          data={[
+            { k: "Message", v: t.message, copy: true },
+            { k: "Hash", v: t.hash, copy: true },
+            { k: "Save path", v: t.path, copy: true },
+            { k: "Down / Up", v: `${fmt(t.downTotal)} / ${fmt(t.upTotal)}` },
+            { k: "Ratio", v: (t.ratio / 1000).toFixed(3) },
+            { k: "Speed", v: `↓ ${speed(t.down)} · ↑ ${speed(t.up)}` },
+            { k: "Peers", v: `${t.peers} connected` },
+            { k: "Priority", v: prio[t.priority] },
+            { k: "Created", v: new Date(t.created * 1000).toLocaleString() },
+          ].filter((r) => r.v)}
+          columns={[
+            { key: "k", width: "110px", header: "Property", className: "prop" },
+            { key: "v", width: "1fr", header: "Value", className: "mono" },
+          ]} />
       </Show>
     </div>
   );

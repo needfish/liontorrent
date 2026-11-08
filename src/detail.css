@@ -1,4 +1,6 @@
 /* Detail panel (ruTorrent-style lower pane) */
 .detail { border-top: 1px solid #d8dee6; padding: 6px 10px; max-height: 38%; overflow-y: auto; background: #fbfcfd; }
+.detail .prop { color: #6c7683; }
+.detail .mono { font-family: var(--mono, monospace); font-size: 13.5px; user-select: all; }
 .st-line { padding: 1px 0; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .st-block { padding: 6px 2px; }

@@ -148,12 +148,25 @@ func boxesJSON(w http.ResponseWriter) {
 	_, _ = w.Write(mustJSON(listBoxes()))
 }
 
+/* stored upstream creds of a profile */
+func credOf(id string) (user, pass string, ok bool) {
+	err := db.QueryRow("SELECT user, pass FROM boxes WHERE id = ?", id).Scan(&user, &pass)
+	return user, pass, err == nil
+}
+
 func saveBox(w http.ResponseWriter, r *http.Request) {
 	in := map[string]string{}
 	_ = json.NewDecoder(r.Body).Decode(&in)
 	id := in["id"]
 	if id == "" {
 		id = randID()
+	} else if euser, epass, exists := credOf(id); exists {
+		if in["user"] == "" {
+			in["user"] = euser
+		}
+		if in["pass"] == "" {
+			in["pass"] = epass
+		}
 	}
 	_, err := db.Exec("INSERT OR REPLACE INTO boxes (id, name, url, user, pass) VALUES (?, ?, ?, ?, ?)",
 		id, in["name"], in["url"], in["user"], in["pass"])

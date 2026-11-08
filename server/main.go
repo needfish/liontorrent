@@ -148,10 +148,10 @@ func boxesJSON(w http.ResponseWriter) {
 	_, _ = w.Write(mustJSON(listBoxes()))
 }
 
-/* stored upstream creds of a profile */
-func credOf(id string) (user, pass string, ok bool) {
-	err := db.QueryRow("SELECT user, pass FROM boxes WHERE id = ?", id).Scan(&user, &pass)
-	return user, pass, err == nil
+/* the stored row of a profile */
+func rowOf(id string) (name, url, user, pass string, ok bool) {
+	err := db.QueryRow("SELECT name, url, user, pass FROM boxes WHERE id = ?", id).Scan(&name, &url, &user, &pass)
+	return name, url, user, pass, err == nil
 }
 
 func saveBox(w http.ResponseWriter, r *http.Request) {
@@ -160,12 +160,11 @@ func saveBox(w http.ResponseWriter, r *http.Request) {
 	id := in["id"]
 	if id == "" {
 		id = randID()
-	} else if euser, epass, exists := credOf(id); exists {
-		if in["user"] == "" {
-			in["user"] = euser
-		}
-		if in["pass"] == "" {
-			in["pass"] = epass
+	} else if oname, ourl, euser, epass, exists := rowOf(id); exists {
+		for k, old := range map[string]string{"name": oname, "url": ourl, "user": euser, "pass": epass} {
+			if in[k] == "" {
+				in[k] = old /* blank or missing field: keep the stored value */
+			}
 		}
 	}
 	_, err := db.Exec("INSERT OR REPLACE INTO boxes (id, name, url, user, pass) VALUES (?, ?, ?, ?, ?)",

@@ -195,7 +195,14 @@ const TorrentUi = (props) => /* props.onSettings swaps to the settings page */
       setError(String(e.message || e).slice(0, 80));
     }
   };
-  onMount(() => { poll(); timer = setInterval(poll, 2000); });
+  onMount(async () => {
+    /* auto-activate when the server has exactly one profile and none is picked */
+    if (!import.meta.env.DEV && !localStorage.getItem("activeId")) {
+      const rows = await (await fetch("/api/profiles")).json();
+      if (rows.length) setActiveId(rows[0].id);
+    }
+    poll(); timer = setInterval(poll, 2000);
+  });
   onCleanup(() => clearInterval(timer));
 
   const labels = createMemo(() => [...new Set(torrents().flatMap((t) => t.tags))]);

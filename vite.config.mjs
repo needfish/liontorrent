@@ -11,26 +11,25 @@ export default defineConfig(({ mode }) => {
     : {};
 
   return {
-
-export default defineConfig({
-  base: "./",
-  plugins: [solid()],
-  resolve: { alias: { "@sealion/ui": path.resolve("../page-mountain-lion/sealion") } },
-  server: {
-    fs: { allow: [".."] },
-    proxy: {
-      "/rpc": {
-        target: box,
-        changeOrigin: true,
-        rewrite: () => "/user-kitan/rutorrent/plugins/rpc/rpc.php",
-        headers: auth,
-      },
-      "/fm": {
-        target: box,
-        changeOrigin: true,
-        rewrite: (p) => "/user-kitan" + p.replace(/^\/fm/, ""), // dashboard filemanager.php lives at /user-kitan/
-        headers: auth,
+    base: "./",
+    plugins: [solid()],
+    resolve: { alias: { "@sealion/ui": path.resolve("../page-mountain-lion/sealion") } },
+    server: {
+      fs: { allow: [".."] },
+      proxy: {
+        "/rpc": {
+          target: box,
+          changeOrigin: true,
+          rewrite: () => "/user-kitan/rutorrent/plugins/rpc/rpc.php",
+          headers: auth,
+        },
+        "/fm": {
+          target: box,
+          changeOrigin: true,
+          rewrite: (p) => "/user-kitan" + p.replace(/^\/fm/, ""), // dashboard filemanager.php lives at /user-kitan/
+          headers: auth,
+        },
       },
     },
-  },
+  };
 });

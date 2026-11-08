@@ -20,6 +20,14 @@ export default defineConfig({
           ? { Authorization: `Basic ${Buffer.from(`${user}:${pass}`).toString("base64")}` }
           : {},
       },
+      "/fm": {
+        target: box,
+        changeOrigin: true,
+        rewrite: (p) => "/user-kitan/rutorrent/plugins/filemanager" + p.replace(/^\/fm/, ""),
+        headers: user && pass
+          ? { Authorization: `Basic ${Buffer.from(`${user}:${pass}`).toString("base64")}` }
+          : {},
+      },
     },
   },
 });

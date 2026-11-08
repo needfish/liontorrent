@@ -1,9 +1,11 @@
 /* Minimal XML-RPC client. Dev posts to /rpc (vite proxy); deployed, transit goes
  * through tnt: /api/rpc/<active profile id>, which forwards with the profile's
  * upstream basic auth. The active profile id lives in localStorage. */
-const url = () => import.meta.env.DEV
-  ? "/rpc"
-  : `/api/rpc/${localStorage.getItem("activeId")}`;
+const url = () => {
+  if (!import.meta.env.DEV && !localStorage.getItem("activeId"))
+    throw new Error("no active seedbox — add one in Settings");
+  return import.meta.env.DEV ? "/rpc" : `/api/rpc/${localStorage.getItem("activeId")}`;
+};
 
 const esc = (s) => String(s).replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]));
 

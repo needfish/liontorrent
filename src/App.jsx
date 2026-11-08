@@ -1,7 +1,7 @@
 import { createSignal, createMemo, createEffect, For, Show, onMount, onCleanup, ErrorBoundary } from "solid-js";
 import {
   Window, Sidebar, SidebarItem, SectionLabel, Toolbar, Btn, Field, Select, Bar, Badge,
-  StatusBar, Table, Confirm, Toasts, Dialog, Upload, Toggle, Tabs, Menu, Text,
+  StatusBar, Table, Confirm, Toasts, Dialog, Upload, Toggle, Tabs, Menu, Text, Mid,
   toast,
 } from "@sealion/ui";
 import { rpc } from "./rpc";
@@ -78,7 +78,7 @@ const sorters = {
  * fixed: badge/bar lock at natural width (no handle); min: exact content width;
  * right: quantifier values pin their unit at the divider. */
 const columns = [
-  { key: "name", width: "200px", min: 44, header: "Name" },
+  { key: "name", width: "200px", min: 168, max: null, header: "Name", render: (t) => <Mid text={t.name} /> },
   { key: "state", width: "94px", min: 94, fixed: true, header: "Status", render: (t) => <Badge tone={tone[state(t)]}>{state(t)}</Badge> },
   { key: "size", width: "82px", min: 82, header: "Size", className: "size right", render: (t) => fmt(t.size) },
   { key: "done", width: "72px", min: 72, fixed: true, header: "Done", render: (t) =>
@@ -93,7 +93,7 @@ const columns = [
   { key: "label", width: "72px", min: 44, header: "Tags", render: (t) => t.tags.join(", ") },
   { key: "seeds", width: "62px", min: 62, header: "Seeds", className: "size", render: (t) => `${t.seedsConn} (${t.seeds})` },
   { key: "leech", width: "62px", min: 62, header: "Leech", className: "size", render: (t) => `${t.peers} (${t.leech})` },
-  { key: "priority", width: "58px", min: 58, header: "Priority", className: "size", render: (t) => prio[t.priority] ?? t.priority },
+  { key: "priority", width: "58px", min: 58, max: 116, header: "Priority", className: "size", render: (t) => prio[t.priority] ?? t.priority },
   { key: "created", width: "70px", min: 70, header: "Created", className: "date", render: (t) =>
     new Date(t.created * 1000).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "2-digit" }) },
 ];

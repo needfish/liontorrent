@@ -273,7 +273,7 @@ const [error, setError] = createSignal("");
     <Window menus={menus}>
       <Show when={page() === "torrents"} fallback={
         <iframe title="File manager"
-          src={(import.meta.env.DEV ? "/fm/filemanager.php" : "https://le6-3-34virmire.pulsedmedia.com/user-kitan/filemanager.php")}
+          src={(import.meta.env.DEV ? "/user-kitan" : "") + "/filemanager.php"}
           style={{ flex: 1, border: "none" }} />}>{/* torrents */}      <Sidebar>
         <SectionLabel>State</SectionLabel>
         <For each={filters}>{(f) => (

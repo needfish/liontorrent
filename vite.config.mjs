@@ -23,10 +23,9 @@ export default defineConfig(({ mode }) => {
           rewrite: () => "/user-kitan/rutorrent/plugins/rpc/rpc.php",
           headers: auth,
         },
-        "/fm": {
+        "/user-kitan": {
           target: box,
           changeOrigin: true,
-          rewrite: (p) => "/user-kitan" + p.replace(/^\/fm/, ""), // dashboard filemanager.php lives at /user-kitan/
           headers: auth,
         },
       },

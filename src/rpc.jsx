@@ -1,9 +1,9 @@
-/* Minimal XML-RPC client for rTorrent via ruTorrent's rpc.php proxy.
- * Local dev posts to /rpc (proxied in vite.config.mjs).
- * Deployed on the seedbox it is same-origin, so the browser's saved
- * basic-auth credentials attach automatically. */
-let url = import.meta.env.DEV ? "/rpc" : "/user-kitan/rutorrent/plugins/rpc/rpc.php";
-export const setEndpoint = (u) => { if (u) url = u; };
+/* Minimal XML-RPC client. Dev posts to /rpc (vite proxy); deployed, transit goes
+ * through tnt: /api/rpc/<active profile id>, which forwards with the profile's
+ * upstream basic auth. The active profile id lives in localStorage. */
+const url = () => import.meta.env.DEV
+  ? "/rpc"
+  : `/api/rpc/${localStorage.getItem("activeId")}`;
 
 const esc = (s) => String(s).replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]));
 
@@ -28,7 +28,7 @@ const value2js = (v) => {
 export const rpc = async (method, ...args) => {
   const body = `<?xml version="1.0" encoding="utf-8"?><methodCall><methodName>${method}</methodName><params>${args
     .map((a) => `<param><value>${param(a)}</value></param>`).join("")}</params></methodCall>`;
-  const res = await fetch(url, {
+  const res = await fetch(url(), {
     method: "POST",
     headers: { "Content-Type": "text/xml" },
     credentials: "include",
@@ -38,9 +38,9 @@ export const rpc = async (method, ...args) => {
   const xml = new DOMParser().parseFromString(await res.text(), "text/xml");
   if (xml.querySelector("fault")) {
     const fields = [...xml.querySelectorAll("fault > value struct member")];
-    const faultCode = fields[0].textContent;
-    const faultString = fields[1].textContent;
-    throw new Error(`${faultCode}: ${faultString}`);
+    throw new Error(`${fields[0].textContent}: ${fields[1].textContent}`);
   }
-  return value2js(xml.querySelector("params > param > value"));
+  const value = xml.querySelector("params > param > value");
+  if (!value) throw new Error("bad rpc response");
+  return value2js(value);
 };

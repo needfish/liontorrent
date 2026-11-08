@@ -19,7 +19,8 @@
 
 /* Settings: seedbox list, dot marks the active box, save row */
 .settings .sb-form { display: flex; gap: 8px; align-items: center; padding: 10px 12px; border-top: 1px solid #e2e6eb; }
-.sb-form .field:first-child { flex: 0 0 200px; }
+.sb-form > * { flex: 0 0 auto; }
+.sb-form .field:first-child { flex: 0 0 170px; }
 .sb-form .field:nth-child(2) { flex: 1; }
 .dot { width: 9px; height: 9px; border-radius: 50%; border: 1px solid #aeb6bf; margin: 0 auto; }
 .dot.on { background: #6cb94d; border-color: #4d9a33; }

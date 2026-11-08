@@ -4,7 +4,7 @@ import {
   StatusBar, Table, Confirm, Toasts, Dialog, Upload, Toggle, Tabs, Menu, Text, Mid,
   toast,
 } from "@sealion/ui";
-import { rpc, setEndpoint } from "./rpc";
+import { rpc } from "./rpc";
 
 const copy = (v) =>
   navigator.clipboard.writeText(v).then(() => toast(v.length > 24 ? `${v.slice(0, 24)}… copied` : `${v} copied`, "good"));
@@ -30,9 +30,9 @@ const FIELDS = [
 
 const domain = (u) => { try { return new URL(u).hostname; } catch { return u; } };
 
-/* --- multiple seedboxes: saved locally; the active entry's URL feeds rpc --- */
-const loadBoxes = () => JSON.parse(localStorage.getItem("seedboxes") || "[]");
-const activeUrl = () => localStorage.getItem("activeUrl") || "";
+/* --- server-backed seedbox profiles via /api/*; active profile id in localStorage --- */
+const activeId = () => localStorage.getItem("activeId") || "";
+const setActiveId = (id) => localStorage.setItem("activeId", id);
 const decodeRow = (r) => {
   const t = Object.fromEntries(FIELD_NAMES.map((n, i) => [n, r[i]]));
   t.tags = (t.tags || "").split(",").filter(Boolean).map(decodeURIComponent);
@@ -195,10 +195,7 @@ const TorrentUi = (props) => /* props.onSettings swaps to the settings page */
       setError(String(e.message || e).slice(0, 80));
     }
   };
-  onMount(() => {
-    setEndpoint(activeUrl());
-    poll(); timer = setInterval(poll, 2000);
-  });
+  onMount(() => { poll(); timer = setInterval(poll, 2000); });
   onCleanup(() => clearInterval(timer));
 
   const labels = createMemo(() => [...new Set(torrents().flatMap((t) => t.tags))]);
@@ -384,31 +381,37 @@ const TorrentUi = (props) => /* props.onSettings swaps to the settings page */
   );
 };
 
-/* Settings page: manage seedboxes (name + RPC URL); the active one feeds rpc */
+/* Settings page: server-backed profiles; the active one feeds /api/rpc */
 const SettingsUi = ({ onClose }) => {
-  const [boxes, setBoxes] = createSignal(loadBoxes());
-  const [active, setActive] = createSignal(activeUrl());
+  const [boxes, setBoxes] = createSignal([]);
+  const [active, setActive] = createSignal(activeId());
   const [pick, setPick] = createSignal(null); /* index into boxes; null = closed */
   const [name, setName] = createSignal("");
   const [url, setUrl] = createSignal("");
-  const blank = () => { setPick(null); setName(""); setUrl(""); };
+  const [user, setUser] = createSignal("");
+  const [pass, setPass] = createSignal("");
+  const blank = () => { setPick(null); setName(""); setUrl(""); setUser(""); setPass(""); };
+  const list = async () => setBoxes(await (await fetch("/api/profiles")).json());
+  onMount(list);
 
   const boxCols = [
-    { key: "url", width: "28px", header: "", render: (b) => <div class="dot" classList={{ on: b.url === active() }} /> },
+    { key: "url", width: "28px", header: "", render: (b) => <div class="dot" classList={{ on: b.id === active() }} /> },
     { key: "name", width: "180px", min: 90, max: null, header: "Name", render: (b) => <Mid text={b.name || domain(b.url)} /> },
     { key: "url", width: "430px", min: 240, max: null, header: "RPC URL", render: (b) => <Mid text={b.url} /> },
   ];
-  const open = (i) => { setPick(i); setName(boxes()[i].name); setUrl(boxes()[i].url); };
-  const store = (b) => { setBoxes(b); localStorage.setItem("seedboxes", JSON.stringify(b)); };
+  const open = (i) => { setPick(i); const b = boxes()[i];
+    setName(b.name); setUrl(b.url); setUser(""); setPass(""); };
   const save = () => {
     if (!name().trim() || !url().trim()) return;
-    const b = [...boxes()];
-    const box = { name: name().trim(), url: url().trim() };
-    if (pick() == null || pick() < 0) b.push(box); else b[pick()] = box;
-    if (!active()) { setActive(box.url); localStorage.setItem("activeUrl", box.url); } /* first entry becomes active */
-    store(b); blank(); toast("Seedbox saved", "good");
+    const id = pick() != null && pick() >= 0 ? boxes()[pick()].id : undefined; /* edit vs create */
+    fetch("/api/profiles", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, name: name().trim(), url: url().trim(), user: user(), pass: pass() }) })
+            .then(list).then(() => { if (!active() && id) { setActive(id); setActiveId(id); } blank(); toast("Seedbox saved", "good"); });
   };
-  const del = () => { store(boxes().filter((_, i) => i !== pick())); blank(); };
+  const del = () => {
+    fetch(`/api/profiles?id=${boxes()[pick()].id}`, { method: "DELETE" }).then(list).then(blank); /* profiles list refresh */
+  };
+  const use = (i) => { setActiveId(i); setActive(i); toast("Active seedbox set", "good"); };
   return (
     <Window menus={[{ label: "Torrents", onTopClick: onClose }, { label: "Settings", onTopClick: () => {} }]}>
       <main class="content settings">
@@ -425,12 +428,14 @@ const SettingsUi = ({ onClose }) => {
           <div class="sb-form">
             <Field placeholder="Name" value={name()} onInput={setName} />
             <Field placeholder="RPC URL (e.g. https://host/user/RPC2)" value={url()} onInput={setUrl} />
-            <Toggle checked={url() !== "" && url() === active()} label="Use this seedbox"
-              onChange={(v) => { if (!url()) return; setActive(url()); localStorage.setItem("activeUrl", url()); toast(v ? `${domain(url())} is now active` : "", "good"); }} />
+            <Field placeholder="RPC user" value={user()} onInput={setUser} />
+            <Field placeholder="RPC password" type="password" value={pass()} onInput={setPass} />
+            <Toggle checked={boxes()[pick()]?.id === active()}
+              onChange={(v) => { const id = boxes()[pick()]?.id; if (id) use(id); }} />
             <Btn onClick={save}>Save</Btn>
           </div>
         </Show>
-        <StatusBar>{`${boxes().length} seedbox(es) · active: ${active() || "default"}`}</StatusBar>
+        <StatusBar>{`${boxes().length} seedbox(es) · active: ${boxes().find((b) => b.id === active())?.name || "none"}`}</StatusBar>
       </main>
       <Toasts />
     </Window>

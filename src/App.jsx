@@ -113,7 +113,7 @@ const Detail = (props) => {
   });
   /* legacy X.multicall returns <struct>{hash: rows}</struct>; multicall2 returns array */
   const asRows = (r, h) => Array.isArray(r) ? r : r?.[h] ?? Object.values(r)[0] ?? [];
-  const t = props.t;
+  const t = () => props.t; /* memo: stale plain const stops the pane from updating */
   return (
     <div class="detail">
       <Tabs items={[
@@ -132,15 +132,15 @@ const Detail = (props) => {
           ]} />} >
         <Table rowKey="k" onSelect={(row) => row.copy && copy(row.v)}
           data={[
-            { k: "Message", v: t.message, copy: true },
-            { k: "Hash", v: t.hash, copy: true },
-            { k: "Save path", v: t.path, copy: true },
-            { k: "Down / Up", v: `${fmt(t.downTotal)} / ${fmt(t.upTotal)}` },
-            { k: "Ratio", v: (t.ratio / 1000).toFixed(3) },
-            { k: "Speed", v: `↓ ${speed(t.down)} · ↑ ${speed(t.up)}` },
-            { k: "Peers", v: `${t.peers} connected` },
-            { k: "Priority", v: prio[t.priority] },
-            { k: "Created", v: new Date(t.created * 1000).toLocaleString() },
+            { k: "Message", v: t().message, copy: true },
+            { k: "Hash", v: t().hash, copy: true },
+            { k: "Save path", v: t().path, copy: true },
+            { k: "Down / Up", v: `${fmt(t().downTotal)} / ${fmt(t().upTotal)}` },
+            { k: "Ratio", v: (t().ratio / 1000).toFixed(3) },
+            { k: "Speed", v: `↓ ${speed(t().down)} · ↑ ${speed(t().up)}` },
+            { k: "Peers", v: `${t().peers} connected` },
+            { k: "Priority", v: prio[t().priority] },
+            { k: "Created", v: new Date(t().created * 1000).toLocaleString() },
           ].filter((r) => r.v)}
           columns={[
             { key: "k", width: "110px", header: "Property", className: "prop" },

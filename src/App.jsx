@@ -325,7 +325,7 @@ const TorrentUi = () => {
           </div>
         </Toolbar>
 
-        <div class="list torrent" style={{ "max-height": selected() ? "45%" : "none" }}>
+        <div class="list torrent">
           <Table columns={columns} data={shown()} rowKey="hash" selectedKeys={selectedIds()}
             onSelect={(t, e) => select(t.hash, e)}
             onContextMenu={(t, e) => { e.preventDefault(); select(t.hash, e); setAt({ x: e.clientX, y: e.clientY }); }}

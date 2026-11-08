@@ -74,25 +74,28 @@ const sorters = {
   priority: (a, b) => b.priority - a.priority,
 };
 
+/* Column widths measured from rendered content ("Road UI" 16px).
+ * fixed: badge/bar lock at natural width (no handle); min: exact content width;
+ * right: quantifier values pin their unit at the divider. */
 const columns = [
-  { key: "name", width: "1fr", header: "Name" },
-  { key: "state", width: "85px", header: "Status", render: (t) => <Badge tone={tone[state(t)]}>{state(t)}</Badge> },
-  { key: "size", width: "75px", header: "Size", className: "size", render: (t) => fmt(t.size) },
-  { key: "done", width: "90px", header: "Done", render: (t) =>
+  { key: "name", width: "200px", min: 44, header: "Name" },
+  { key: "state", width: "94px", min: 94, fixed: true, header: "Status", render: (t) => <Badge tone={tone[state(t)]}>{state(t)}</Badge> },
+  { key: "size", width: "82px", min: 82, header: "Size", className: "size right", render: (t) => fmt(t.size) },
+  { key: "done", width: "72px", min: 72, fixed: true, header: "Done", render: (t) =>
     <Bar percent={t.size ? (t.done / t.size) * 100 : 0} hue={t.complete ? "green" : "blue"} /> },
-  { key: "downTotal", width: "85px", header: "Downloaded", className: "size", render: (t) => fmt(t.downTotal) },
-  { key: "upTotal", width: "85px", header: "Uploaded", className: "size", render: (t) => fmt(t.upTotal) },
-  { key: "ratio", width: "60px", header: "Ratio", className: "size", render: (t) => (t.ratio / 1000).toFixed(3) },
-  { key: "down", width: "80px", header: "DL", className: "size", render: (t) => speed(t.down) },
-  { key: "up", width: "80px", header: "UL", className: "size", render: (t) => speed(t.up) },
-  { key: "eta", width: "60px", header: "ETA", className: "size", render: (t) =>
+  { key: "downTotal", width: "96px", min: 96, header: "Downloaded", className: "size right", render: (t) => fmt(t.downTotal) },
+  { key: "upTotal", width: "82px", min: 82, header: "Uploaded", className: "size right", render: (t) => fmt(t.upTotal) },
+  { key: "ratio", width: "62px", min: 62, header: "Ratio", className: "size right", render: (t) => (t.ratio / 1000).toFixed(3) },
+  { key: "down", width: "76px", min: 76, header: "DL", className: "size right", render: (t) => speed(t.down) },
+  { key: "up", width: "76px", min: 76, header: "UL", className: "size right", render: (t) => speed(t.up) },
+  { key: "eta", width: "64px", min: 64, header: "ETA", className: "size", render: (t) =>
     eta({ ...t, eta: Math.floor((t.size - t.done) / Math.max(t.down, 1)) }) },
-  { key: "label", width: "80px", header: "Tags", render: (t) => t.tags.join(", ") },
-  { key: "seeds", width: "62px", header: "Seeds", className: "size", render: (t) => `${t.seedsConn} (${t.seeds})` },
-  { key: "leech", width: "62px", header: "Leech", className: "size", render: (t) => `${t.peers} (${t.leech})` },
-  { key: "priority", width: "60px", header: "Priority", className: "size", render: (t) => prio[t.priority] ?? t.priority },
-  { key: "created", width: "75px", header: "Created", className: "date", render: (t) =>
-    new Date(t.created * 1000).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) },
+  { key: "label", width: "72px", min: 44, header: "Tags", render: (t) => t.tags.join(", ") },
+  { key: "seeds", width: "62px", min: 62, header: "Seeds", className: "size", render: (t) => `${t.seedsConn} (${t.seeds})` },
+  { key: "leech", width: "62px", min: 62, header: "Leech", className: "size", render: (t) => `${t.peers} (${t.leech})` },
+  { key: "priority", width: "58px", min: 58, header: "Priority", className: "size", render: (t) => prio[t.priority] ?? t.priority },
+  { key: "created", width: "70px", min: 70, header: "Created", className: "date", render: (t) =>
+    new Date(t.created * 1000).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "2-digit" }) },
 ];
 
 /* Flood-style batched calls: one XML-RPC call per hash, in order. */

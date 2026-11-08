@@ -18,7 +18,7 @@ const value2js = (v) => {
     case "array": return [...c.children[0].children].map(value2js);
     case "struct": return Object.fromEntries(
       [...c.children[0].children].map((m) => [m.children[0].textContent, value2js(m.children[1])]));
-    case "i4": case "int": case "double": return +c.textContent;
+    case "i4": case "int": case "i8": case "double": return +c.textContent;
     case "boolean": return c.textContent === "1";
     default: return c.textContent;
   }

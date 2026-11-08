@@ -1,5 +1,8 @@
 /* Detail panel (ruTorrent-style lower pane) */
-.detail { border-top: 1px solid #d8dee6; padding: 6px 10px; max-height: 38%; overflow-y: auto; background: #fbfcfd; }
+/* fixed pane height so tab switches don't jump; content scrolls under the tabs */
+.detail { border-top: 1px solid #d8dee6; padding: 6px 10px 0; height: 38%; display: flex; flex-direction: column; background: #fbfcfd; }
+.detail > :first-child { flex-shrink: 0; }
+.detail > :last-child { flex: 1; min-height: 0; overflow-y: auto; }
 /* list fills leftover space; status bar pinned regardless of detail height */
 .content > .list { flex: 1 1 0; min-height: 0; overflow-y: auto; }
 .content > .statusbar { margin-top: auto; }

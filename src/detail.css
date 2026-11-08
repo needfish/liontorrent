@@ -1,9 +1,10 @@
 /* full-bleed list: header bar and rows meet the window edges like the toolbar */
 .content > .list { padding: 0; }
 
-/* Finder-style header: flat like the rows, set apart by small gray text */
-.header { font-size: 13px; padding: 8px 14px; }
-.header > span + span { border-left: 1px solid #ddd; padding-left: 7px; margin-left: -7px; }
+/* Finder-style header: flat like the rows, set apart by small gray text; scoped so the
+ * torrent list keeps its own 16px header (these rules leak through globals otherwise) */
+.detail .header { font-size: 13px; padding: 8px 14px; }
+.detail .header > span + span { border-left: 1px solid #ddd; padding-left: 7px; margin-left: -7px; }
 
 /* Detail panel (ruTorrent-style lower pane) */
 /* fixed pane height so tab switches don't jump; content scrolls under the tabs.

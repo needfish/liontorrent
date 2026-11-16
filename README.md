@@ -1,14 +1,12 @@
 # liontorrent
 
 A lightweight torrent web client for ruTorrent seedboxes.
-SolidJS + Vite frontend, Go static/rpc gate server, optional PHP file manager.
+Provides basic torrent management(add, view metadata, delete, etc.)
+Made for testing my UI component library, Sealion UI
 
-## Features
+Login is single password
+Has the option to manage multiple seedboxes using profiles
 
-- single-password gate with HMAC cookie sessions (90 days)
-- multi-profile seedbox management (sqlite)
-- RPC forwarding to ruTorrent
-- saveBox credential storage
 
 ## Dev
 

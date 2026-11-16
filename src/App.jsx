@@ -182,7 +182,7 @@ const TorrentUi = (props) => /* props.onSettings swaps to the settings page */
     { label: "Torrents", onTopClick: () => {} },
     { label: "Settings", onTopClick: props.onSettings },
     { label: "ruTorrent ↗", onTopClick: () =>
-      window.open("https://le6-3-34virmire.pulsedmedia.com/user-kitan/") },
+      window.open(import.meta.env.VITE_BOX_URL || window.location.origin) },
   ];
 
   let timer;

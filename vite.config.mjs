@@ -4,7 +4,7 @@ import path from "node:path";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  const box = "https://le6-3-34virmire.pulsedmedia.com";
+  const box = env.LIONTORRENT_BOX ?? "";
   const user = env.LIONTORRENT_USER, pass = env.LIONTORRENT_PASS;
   const auth = user && pass
     ? { Authorization: `Basic ${Buffer.from(`${user}:${pass}`).toString("base64")}` }

@@ -13,7 +13,7 @@ export default defineConfig(({ mode }) => {
   return {
     base: "./",
     plugins: [solid()],
-    resolve: { alias: { "@sealion/ui": path.resolve("../page-mountain-lion/sealion") } },
+    resolve: { alias: { "@sealion/ui": path.resolve("./vendor/sealion") } },
     server: {
       fs: { allow: [".."] },
       proxy: {

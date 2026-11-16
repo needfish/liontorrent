@@ -1,16 +1,11 @@
 # liontorrent
 
-<<<<<<< HEAD
 - A lightweight torrent web client for ruTorrent seedboxes, made for testing my UI component library, Sealion UI.
 - Provides basic torrent management (add, view metadata, delete, etc.)
 - Single-password sign in authentication, very basic security
 - Has the option to manage multiple seedboxes using profiles
-=======
-![screenshot](docs/screenshot.png)
 
-A lightweight torrent web client for ruTorrent seedboxes.
-SolidJS + Vite frontend, Go static/rpc gate server, optional PHP file manager.
->>>>>>> a23669a (add screenshot to README)
+![screenshot](docs/screenshot.png)
 
 
 ## Dev
